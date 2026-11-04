@@ -1,0 +1,7 @@
+client_id,agent_id,agent_name,team,site,employment_type,effective_date
+C001,A1001,Dana Reyes,Billing,Manila,Full-Time,2024-01-01
+C001,A1001,Dana Reyes,Retention,Manila,Full-Time,2024-04-01
+C001,A1002,Marcus Cole,Tech Support,Cebu,Part-Time,2024-01-01
+C002,A2001,Priya Nair,Sales,Austin,Full-Time,2024-01-01
+C002,A2002,Liang Wei,Support,Austin,Full-Time,2024-01-01
+C002,A2002,Liang Wei,Support,Remote,Full-Time,2024-03-01

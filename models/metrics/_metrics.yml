@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: metric_aht
+    description: "Shared AHT definition. GRAIN: client x contact_date x canonical_channel."
+    columns:
+      - name: client_id
+        data_tests: [not_null]
+      - name: aht_seconds
+        data_tests: [not_null]
+
+  - name: metric_csat
+    description: "Shared CSAT definition (mean + top-box). GRAIN: client x survey_date."
+    columns:
+      - name: client_id
+        data_tests: [not_null]
+      - name: csat_avg
+        data_tests: [not_null]
+
+  - name: metric_fcr
+    description: "Shared FCR definition (fcr/resolved). GRAIN: client x contact_date."
+    columns:
+      - name: client_id
+        data_tests: [not_null]
+
+  - name: metric_sla
+    description: "Shared service-level definition (answered-in-SLA / offered). GRAIN: client x contact_date x canonical_channel."
+    columns:
+      - name: client_id
+        data_tests: [not_null]
+      - name: service_level
+        data_tests: [not_null]
+
+  - name: metric_occupancy
+    description: "Shared WFM occupancy definition (handle / available). GRAIN: client x work_date."
+    columns:
+      - name: client_id
+        data_tests: [not_null]
+      - name: occupancy_pct
+        data_tests: [not_null]

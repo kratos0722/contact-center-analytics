@@ -1,0 +1,56 @@
+name: "contact_center_analytics"
+version: "1.0.0"
+config-version: 2
+
+# This profile is resolved from profiles.yml in DBT_PROFILES_DIR (the repo root),
+# which keeps the project fully self-contained and CI-reproducible.
+profile: "contact_center_analytics"
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+analysis-paths: ["analyses"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# ---------------------------------------------------------------------------
+# Layered (medallion-style) architecture
+#   seeds (raw)  ->  staging  ->  intermediate  ->  marts  ->  metrics
+# ---------------------------------------------------------------------------
+seeds:
+  contact_center_analytics:
+    +schema: raw
+    raw_contacts:
+      +column_types:
+        contact_date: varchar
+        offered_ts: varchar
+        answered_ts: varchar
+        end_ts: varchar
+    raw_agents:
+      +column_types:
+        effective_date: varchar
+    raw_surveys:
+      +column_types:
+        survey_ts: varchar
+    raw_agent_shifts:
+      +column_types:
+        work_date: varchar
+    ref_canonical_disposition:
+      +column_types:
+        is_resolved: varchar
+        is_escalation: varchar
+
+models:
+  contact_center_analytics:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: ephemeral
+    marts:
+      +materialized: table
+    metrics:
+      +materialized: view

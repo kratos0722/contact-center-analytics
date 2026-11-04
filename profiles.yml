@@ -1,0 +1,12 @@
+# Project-local profiles.yml.
+# Point DBT_PROFILES_DIR at the repo root so this file is used both locally and in CI:
+#   export DBT_PROFILES_DIR=$(pwd)
+# The DuckDB database is a single file created in the working directory (repo root).
+contact_center_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "warehouse.duckdb"
+      threads: 4
+      schema: main

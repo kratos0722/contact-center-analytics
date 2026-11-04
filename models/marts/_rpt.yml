@@ -1,0 +1,56 @@
+version: 2
+
+models:
+  - name: rpt_client_scorecard
+    latest_version: 2
+    description: >
+      Per-client executive scorecard, built on the shared metric definitions.
+      Exposed as a VERSIONED model: v1 is the stable contract existing consumers
+      pin to; v2 introduces a breaking change (drops resolution_rate, renames
+      csat_avg -> csat_mean, adds fcr_contacts / fcr_rate / occupancy_pct).
+      Consumers migrate on their own schedule via `ref('rpt_client_scorecard', v=1)`.
+      Both versions enforce a contract, so an accidental schema change fails
+      `dbt build` in CI instead of silently corrupting a client's report.
+    config:
+      contract:
+        enforced: true
+    # Superset of columns across all versions; each version includes a subset.
+    columns:
+      - name: client_id
+        data_type: varchar
+        data_tests: [unique, not_null]
+      - name: total_contacts
+        data_type: bigint
+        data_tests: [not_null]
+      - name: resolved_contacts
+        data_type: bigint
+      - name: resolution_rate
+        data_type: double
+        description: "(v1 only) resolved_contacts / total_contacts."
+      - name: csat_avg
+        data_type: double
+        description: "(v1 only) renamed to csat_mean in v2."
+      - name: fcr_contacts
+        data_type: bigint
+        description: "(v2+) count of first-contact-resolved contacts."
+      - name: fcr_rate
+        data_type: double
+        description: "(v2+) fcr_contacts / resolved_contacts."
+      - name: csat_mean
+        data_type: double
+        description: "(v2+) mean CSAT score (was csat_avg in v1)."
+      - name: aht_seconds
+        data_type: double
+      - name: occupancy_pct
+        data_type: double
+        description: "(v2+) productive time / available time."
+
+    versions:
+      - v: 1
+        columns:
+          - include: "*"
+            exclude: [fcr_contacts, fcr_rate, csat_mean, occupancy_pct]
+      - v: 2
+        columns:
+          - include: "*"
+            exclude: [resolution_rate, csat_avg]

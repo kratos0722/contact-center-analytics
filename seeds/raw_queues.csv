@@ -1,0 +1,7 @@
+client_id,queue_id,queue_name,channel_raw,sla_threshold_seconds
+C001,Q1,Acme Billing Voice,PHONE,20
+C001,Q2,Acme Tech Chat,CHAT,30
+C001,Q3,Acme Email Support,EMAIL,14400
+C002,Q10,Globex Sales Voice,Voice,15
+C002,Q11,Globex Support Chat,WebChat,30
+C002,Q12,Globex Email Care,E-Mail,28800

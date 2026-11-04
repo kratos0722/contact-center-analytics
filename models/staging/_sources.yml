@@ -1,0 +1,31 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Raw landing zone for every client feed. In production these tables would be
+      delivered by an EL tool (e.g. Fivetran / Airbyte) landing one client at a time;
+      in this self-contained demo they are materialised from the CSV seeds in `seeds/`
+      into the `raw` schema. Each staging model reads from here via `source()` and is
+      given an explicit `depends_on` edge to the backing seed so a single `dbt build`
+      always loads the seed first.
+    schema: raw
+    tables:
+      - name: raw_contacts
+        description: One row per customer interaction, as emitted by each client's ACD/CRM. Disposition and channel labels differ per client.
+      - name: raw_agents
+        description: Agent master records. Multiple rows per agent capture attribute changes over time (feeds the SCD type-2 dimension).
+      - name: raw_queues
+        description: Queue / skill definitions, including the per-queue service-level threshold (seconds).
+      - name: raw_surveys
+        description: Post-contact CSAT survey responses (1-5).
+      - name: raw_agent_shifts
+        description: Daily agent schedule / staffing (scheduled and logged-in available seconds) used for occupancy.
+      - name: map_channel
+        description: Per-client crosswalk from raw channel labels to canonical channels.
+      - name: map_disposition
+        description: Per-client crosswalk from raw disposition labels to canonical dispositions.
+      - name: ref_canonical_disposition
+        description: Conformed disposition dictionary - the single definition of what each canonical disposition means (resolution / escalation flags).
+      - name: ref_clients
+        description: Client master dimension.

@@ -1,0 +1,5 @@
+canonical_disposition,is_resolved,is_escalation,disposition_description
+RESOLVED,true,false,Issue fully resolved during this contact
+ESCALATED,false,true,Escalated or transferred to another team
+FOLLOW_UP,false,false,Requires a scheduled callback or follow-up
+ABANDONED,false,false,Customer disconnected before being served

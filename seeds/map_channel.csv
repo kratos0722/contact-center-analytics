@@ -1,0 +1,7 @@
+client_id,raw_channel,canonical_channel
+C001,PHONE,VOICE
+C001,CHAT,CHAT
+C001,EMAIL,EMAIL
+C002,Voice,VOICE
+C002,WebChat,CHAT
+C002,E-Mail,EMAIL

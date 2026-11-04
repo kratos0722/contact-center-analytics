@@ -1,0 +1,117 @@
+version: 2
+
+models:
+  - name: stg_contacts
+    description: Cleaned, typed interactions - one row per contact. Raw channel/disposition labels are preserved here and canonicalised downstream.
+    columns:
+      - name: contact_id
+        description: Natural key of the interaction (unique within a client).
+        data_tests:
+          - not_null
+      - name: client_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_clients')
+                field: client_id
+      - name: queue_id
+        data_tests:
+          - not_null
+      - name: talk_seconds
+        data_tests:
+          - not_null
+    data_tests:
+      # Compound natural key (client + contact) is unique - tested without any
+      # external package by passing an expression as the column.
+      - unique:
+          column_name: "client_id || '-' || contact_id"
+
+  - name: stg_agents
+    description: Typed agent version records (one row per agent per effective_date).
+    columns:
+      - name: agent_id
+        data_tests:
+          - not_null
+      - name: effective_date
+        data_tests:
+          - not_null
+      - name: employment_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["Full-Time", "Part-Time"]
+
+  - name: stg_queues
+    description: Typed queue definitions with SLA thresholds.
+    columns:
+      - name: queue_id
+        data_tests:
+          - not_null
+          - unique:
+              column_name: "client_id || '-' || queue_id"
+      - name: sla_threshold_seconds
+        data_tests:
+          - not_null
+
+  - name: stg_surveys
+    description: Typed CSAT survey responses.
+    columns:
+      - name: survey_id
+        data_tests:
+          - not_null
+          - unique
+      - name: csat_score
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+                quote: false
+
+  - name: stg_agent_shifts
+    description: Typed daily agent staffing.
+    columns:
+      - name: available_seconds
+        data_tests:
+          - not_null
+
+  - name: stg_channel_map
+    description: Per-client raw-to-canonical channel crosswalk.
+    columns:
+      - name: canonical_channel
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["VOICE", "EMAIL", "CHAT"]
+
+  - name: stg_disposition_map
+    description: Per-client raw-to-canonical disposition crosswalk.
+    columns:
+      - name: canonical_disposition
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_canonical_disposition')
+                field: canonical_disposition
+
+  - name: stg_canonical_disposition
+    description: Conformed disposition dictionary (single source of resolution/escalation semantics).
+    columns:
+      - name: canonical_disposition
+        data_tests:
+          - not_null
+          - unique
+          - accepted_values:
+              arguments:
+                values: ["RESOLVED", "ESCALATED", "FOLLOW_UP", "ABANDONED"]
+
+  - name: stg_clients
+    description: Client master.
+    columns:
+      - name: client_id
+        data_tests:
+          - not_null
+          - unique

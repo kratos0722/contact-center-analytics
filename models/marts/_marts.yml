@@ -1,0 +1,323 @@
+version: 2
+
+models:
+  # =========================================================================
+  # DIMENSIONS
+  # =========================================================================
+  - name: dim_agent
+    description: >
+      Conformed agent dimension as a Slowly Changing Dimension (type 2).
+      GRAIN: one row per agent *version*. `valid_from`/`valid_to` bound each
+      version and `is_current` flags the live row. Join facts with
+      `contact_date between valid_from and valid_to` to get point-in-time
+      attributes.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: agent_sk
+        data_type: varchar
+        description: Surrogate key for the agent version (md5 of client + agent + valid_from).
+        data_tests: [unique, not_null]
+      - name: client_id
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_clients')
+                field: client_id
+      - name: agent_id
+        data_type: varchar
+        data_tests: [not_null]
+      - name: agent_name
+        data_type: varchar
+      - name: team
+        data_type: varchar
+      - name: site
+        data_type: varchar
+      - name: employment_type
+        data_type: varchar
+      - name: valid_from
+        data_type: date
+        data_tests: [not_null]
+      - name: valid_to
+        data_type: date
+        data_tests: [not_null]
+      - name: is_current
+        data_type: boolean
+        data_tests: [not_null]
+
+  - name: dim_queue
+    description: "Conformed queue dimension with canonicalised channel. GRAIN: one row per client queue."
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: queue_sk
+        data_type: varchar
+        data_tests: [unique, not_null]
+      - name: client_id
+        data_type: varchar
+        data_tests: [not_null]
+      - name: queue_id
+        data_type: varchar
+        data_tests: [not_null]
+      - name: queue_name
+        data_type: varchar
+      - name: channel_raw
+        data_type: varchar
+      - name: canonical_channel
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["VOICE", "EMAIL", "CHAT"]
+      - name: sla_threshold_seconds
+        data_type: integer
+        data_tests: [not_null]
+
+  - name: dim_disposition
+    description: >
+      Conformed disposition dimension - the shared definition of each outcome.
+      GRAIN: one row per canonical disposition.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: disposition_sk
+        data_type: varchar
+        data_tests: [unique, not_null]
+      - name: canonical_disposition
+        data_type: varchar
+        data_tests:
+          - unique
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["RESOLVED", "ESCALATED", "FOLLOW_UP", "ABANDONED"]
+      - name: is_resolved
+        data_type: boolean
+        data_tests: [not_null]
+      - name: is_escalation
+        data_type: boolean
+        data_tests: [not_null]
+      - name: disposition_description
+        data_type: varchar
+
+  - name: dim_date
+    description: "Conformed date dimension. GRAIN: one row per calendar day."
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: date_day
+        data_type: date
+        data_tests: [unique, not_null]
+      - name: day_of_week
+        data_type: integer
+      - name: day_name
+        data_type: varchar
+      - name: week_of_year
+        data_type: integer
+      - name: day_of_month
+        data_type: integer
+      - name: month_number
+        data_type: integer
+      - name: month_name
+        data_type: varchar
+      - name: quarter_number
+        data_type: integer
+      - name: year_number
+        data_type: integer
+      - name: is_weekend
+        data_type: boolean
+
+  # =========================================================================
+  # FACTS
+  # =========================================================================
+  - name: fct_contacts
+    description: >
+      GRAIN: one row per customer interaction (contact). Additive measures:
+      handle_seconds, wait_seconds. Boolean event flags power the shared
+      metrics (resolution, SLA, FCR). Abandoned contacts have a null agent_sk.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: contact_sk
+        data_type: varchar
+        data_tests: [unique, not_null]
+      - name: client_id
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_clients')
+                field: client_id
+      - name: contact_id
+        data_type: varchar
+        data_tests: [not_null]
+      - name: customer_id
+        data_type: varchar
+        data_tests: [not_null]
+      - name: contact_date
+        data_type: date
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: agent_sk
+        data_type: varchar
+        description: SCD-2 agent version key; null for abandoned contacts (no agent handled them).
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_agent')
+                field: agent_sk
+      - name: queue_sk
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_queue')
+                field: queue_sk
+      - name: disposition_sk
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_disposition')
+                field: disposition_sk
+      - name: canonical_channel
+        data_type: varchar
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["VOICE", "EMAIL", "CHAT"]
+      - name: canonical_disposition
+        data_type: varchar
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["RESOLVED", "ESCALATED", "FOLLOW_UP", "ABANDONED"]
+      - name: offered_ts
+        data_type: timestamp
+      - name: answered_ts
+        data_type: timestamp
+      - name: handle_seconds
+        data_type: integer
+        data_tests: [not_null]
+      - name: wait_seconds
+        data_type: integer
+      - name: is_answered
+        data_type: boolean
+        data_tests: [not_null]
+      - name: is_abandoned
+        data_type: boolean
+        data_tests: [not_null]
+      - name: is_resolved
+        data_type: boolean
+        data_tests: [not_null]
+      - name: is_fcr
+        data_type: boolean
+        data_tests: [not_null]
+      - name: answered_within_sla
+        data_type: boolean
+        data_tests: [not_null]
+
+  - name: fct_csat
+    description: "GRAIN: one row per CSAT survey response. is_satisfied = top-box (score >= 4)."
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: survey_sk
+        data_type: varchar
+        data_tests: [unique, not_null]
+      - name: client_id
+        data_type: varchar
+        data_tests: [not_null]
+      - name: survey_id
+        data_type: varchar
+        data_tests: [not_null]
+      - name: contact_id
+        data_type: varchar
+        data_tests: [not_null]
+      - name: contact_sk
+        data_type: varchar
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('fct_contacts')
+                field: contact_sk
+      - name: canonical_disposition
+        data_type: varchar
+      - name: csat_score
+        data_type: integer
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+                quote: false
+      - name: is_satisfied
+        data_type: boolean
+        data_tests: [not_null]
+      - name: survey_date
+        data_type: date
+      - name: survey_ts
+        data_type: timestamp
+
+  - name: fct_agent_day
+    description: >
+      GRAIN: one row per agent per staffed day. Occupancy = handle_seconds /
+      available_seconds (productive time over logged-in time).
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: agent_day_sk
+        data_type: varchar
+        data_tests: [unique, not_null]
+      - name: client_id
+        data_type: varchar
+        data_tests: [not_null]
+      - name: agent_id
+        data_type: varchar
+        data_tests: [not_null]
+      - name: agent_sk
+        data_type: varchar
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_agent')
+                field: agent_sk
+      - name: work_date
+        data_type: date
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: scheduled_seconds
+        data_type: integer
+      - name: available_seconds
+        data_type: integer
+        data_tests: [not_null]
+      - name: handled_contacts
+        data_type: integer
+        data_tests: [not_null]
+      - name: handle_seconds
+        data_type: integer
+        data_tests: [not_null]
+      - name: occupancy_pct
+        data_type: double
+        data_tests: [not_null]
