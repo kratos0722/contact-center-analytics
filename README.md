@@ -102,6 +102,7 @@ Each metric is defined in exactly one model so every account is forced to agree.
 | **FCR** (First Contact Resolution) | `metric_fcr` | `fcr_contacts / resolved_contacts`, where a contact is FCR if it was resolved **and** the same customer did not contact the same client again within 7 days |
 | **Service Level / SLA** | `metric_sla` | `answered_within_sla / offered` (offered includes abandoned; SLA threshold is per-queue) |
 | **Occupancy** (WFM) | `metric_occupancy` | `handle_seconds / available_seconds` (productive time ÷ logged-in time) |
+| **Abandonment** | `metric_abandonment` | `abandoned_contacts / offered` (same offered denominator as Service Level, so the two stay consistent) |
 
 ---
 
